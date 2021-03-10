@@ -1,0 +1,1 @@
+switched to taking input from file.and child_pid is : 22887 

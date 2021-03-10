@@ -1,0 +1,22 @@
+total 196
+drwxr-xr-x  2 mukesh mukesh  4096 Mar 10 13:22 .
+drwxr-xr-x 10 mukesh mukesh  4096 Mar 10 11:40 ..
+-rwxrwxr-x  1 mukesh mukesh 41000 Mar 10 13:17 062
+-rw-rw-r--  1 mukesh mukesh 33303 Mar 10 13:17 062.c
+-rw-rw-r--  1 mukesh mukesh    96 Feb 28 15:47 062.m
+-rw-r--r--  1 mukesh mukesh    39 Mar 10 01:59 file.txt
+-rwxrwxr-x  1 mukesh mukesh 13096 Mar 10 02:15 fork
+-rw-r--r--  1 mukesh mukesh  5983 Mar 10 00:46 fork.c
+-rw-rw-r--  1 mukesh mukesh    22 Mar 10 13:16 lem
+-rw-rw-r--  1 mukesh mukesh    22 Mar 10 13:16 making.txt
+-rw-rw-r--  1 mukesh mukesh  5983 Mar 10 13:18 may
+-rwxrwxr-x  1 mukesh mukesh  8656 Mar 10 12:46 m_fork
+-rw-rw-r--  1 mukesh mukesh   817 Mar 10 11:52 m_fork.c
+-rw-r--r--  1 mukesh mukesh    24 Mar 10 02:08 out.txt
+-rwxr-xr-x  1 mukesh mukesh  8576 Mar 10 02:00 redirect
+-rw-r--r--  1 mukesh mukesh   562 Mar 10 02:00 redirect.c
+-rw-rw-r--  1 mukesh mukesh    39 Mar 10 12:59 sample.txt
+-rwxrwxr-x  1 mukesh mukesh  8432 Mar 10 12:54 simple
+-rw-rw-r--  1 mukesh mukesh   451 Mar 10 12:54 simple.c
+-rw-rw-r--  1 mukesh mukesh     0 Mar 10 13:22 stats
+-rw-rw-r--  1 mukesh mukesh    22 Mar 10 12:49 take.txt

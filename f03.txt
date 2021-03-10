@@ -1,0 +1,1 @@
+switched to shooting output to file. and child_pid is : 18521 
