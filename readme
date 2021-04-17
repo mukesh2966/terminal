@@ -1,0 +1,15 @@
+implemented the following functionalities of terminal.
+
+1) HISTn                           : Will print the last `n` commands.
+2) !HISTn                          : Execute the `n`th command from history.
+3) pid                             : Will print the process-id of the shell.
+4) pid all                         : Will print the process-id of all the commands executed till now.
+5) cd                              : To change the directory.
+6) pid current                     : Will print the process-id of all currently active processes.
+7) HISTORY BRIEF                   : For short description of command history.
+8) HISTORY FULL                    : For full description of command history.
+9) EXEC <COMMAND_NAME>             : For executing a terminal command.
+10) EXEC <COMMAND_INDEX_NUMBER>    : For executing a command by its index in cmd_history.
+11) all commands executed in terminal.
+12) foreground and background scheduling of commands
+13) pipeing and redirection also possible.
