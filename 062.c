@@ -6,6 +6,8 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <fcntl.h>
+#include <errno.h>
 
 #define MAX_LEN 1000
 
@@ -268,158 +270,253 @@ void handler(int sig, siginfo_t *sip, void *notused)
     fflush(stdout);
 }
 
+void all_redirect(int start, int end, char **command)
+{
+    struct symbols redirection[20];
+
+    int redirect = 0;
+    for (int k = start; k <= end; k++)
+    {
+        if (!strcmp(command[k], "<\0") || !strcmp(command[k], ">\0"))
+        {
+            redirection[redirect].index = k;
+            redirection[redirect].symb = command[k];
+            redirect += 1;
+            command[k] = NULL;
+        }
+    }
+
+    int trace = 0;
+    while (trace < redirect)
+    {
+
+        if (strcmp(redirection[trace].symb, "<\0") == 0)
+        {
+            char str1[200] = "";
+            char *t_cat = command[redirection[trace].index + 1];
+            // printf("this is t_cat : %s\n", t_cat);
+            // while (t_cat != NULL)
+            // {
+            //     strcat(str1, t_cat);
+            //     t_cat += 1;
+            // }
+
+            int file_desc = open(t_cat, O_RDONLY);
+            if (file_desc == -1)
+            {
+                printf("File named : %s does not exist\n", t_cat);
+                return;
+            }
+            else
+            {
+                dup2(file_desc, 0);
+            }
+        }
+        else if (strcmp(redirection[trace].symb, ">\0") == 0)
+        {
+            // char *str1 = (char *)malloc(sizeof(char) * 200);
+            // str1 = "";
+            char *t_cat = command[redirection[trace].index + 1];
+            // printf("this is t_cat : %s\n", t_cat);
+            // printf("this is redirection[trace].index : %d", redirection[trace].index);
+
+            // while (t_cat != NULL)
+            // {
+            //     strcat(str1, t_cat);
+            //     t_cat += 1;
+            // }
+
+            fflush(stdout);
+            int file_desc = open(t_cat, O_WRONLY | O_CREAT | O_TRUNC);
+            if (file_desc == -1)
+            {
+                printf("File named : %s does not exist\n", t_cat);
+                perror("error in file opneing : ");
+                return;
+            }
+            else
+            {
+
+                dup2(file_desc, 1);
+            }
+        }
+        trace++;
+    }
+
+    trace = 0;
+    while (trace < redirect)
+    {
+        *(command + redirection[trace].index) = redirection[trace].symb;
+        trace++;
+    }
+}
+
 void exec_cmd_redirect(int argCounter, char **command, struct symbols separators[30], int separator_index)
 {
     pid_t pid_arr[30];
-    int i;
-    int not_there = 0;
+    pid_t pid_single;
     int n = separator_index;
 
-    for (i = 0; i < n; i++)
+    pid_t pid_first;
+
+    if (n == 0)
     {
-        // signal(SIGCHLD, SIG_IGN);
-        if ((pid_arr[i] = fork()) < 0)
+        int start = 0;
+        int end = argCounter - 1;
+
+        pid_t pid_k;
+        if ((pid_k = fork()) < 0)
         {
             printf("Fork failed.\n");
             _exit(1);
         }
-        else if (pid_arr[i] == 0)
+        else if (pid_k == 0)
         {
-            if (strcmp(separators[i].symb, "<\0") == 0)
+            all_redirect(start, end, command);
+            char **kira = command;
+            // printf("this is it : %s", command[0]);
+            while (strcmp(*kira, ">\0") && strcmp(*kira, "<\0"))
             {
-                FILE *fp;
-
-                fp = freopen(*(command + separators[i].index + 1), "r", stdin);
-                printf("switched to taking input from file.and chilk_pid is : %d \n", getpid());
-
-                int addition;
-                if (i == 0)
-                {
-                    addition = 0;
-                }
-                else
-                {
-                    addition = separators[i - 1].index + 1;
-                }
-
-                if (i + 1 < n && strcmp(separators[i + 1].symb, ">\0") == 0)
-                {
-
-                    FILE *fp1;
-                    pid_t g_child_pid;
-
-                    if ((g_child_pid = fork()) < 0)
-                    {
-                        printf("Fork failed.\n");
-                        _exit(1);
-                    }
-                    else if (g_child_pid == 0)
-                    {
-                        fflush(stdout);
-                        fp1 = freopen(*(command + separators[i + 1].index + 1), "w", stdout);
-                        execvp(command[0 + addition], command);
-                        // fclose(fp);
-                        // fclose(fp1);
-                        printf("NOT A VALID CMD\n");
-
-                        _exit(1);
-                    }
-                    else
-                    {
-                        waitpid(g_child_pid, NULL, 0);
-                        fflush(stdout);
-                        i += 1;
-                        // pid_arr[i] = -1;
-                        not_there += 1;
-                        fclose(fp1);
-                    }
-                }
-                else
-                {
-                    execvp(command[0 + addition], command);
-                    // fclose(fp);
-
-                    // printf("NOT A VALID CMD\n");
-
-                    _exit(1);
-                }
-
-                fclose(fp);
+                // printf("%s ", *kira);
+                kira++;
             }
-            else if (strcmp(separators[i].symb, ">\0") == 0)
-            {
-                FILE *fp;
-                printf("this is i :%d\n", i);
-                fp = freopen(*(command + separators[i].index + 1), "w", stdout);
+            // printf("\n");
 
-                printf("switched to shooting output to file. and chilt_pid is : %d \n", getpid());
-
-                int addition;
-                if (i == 0)
-                {
-                    addition = 0;
-                }
-                else
-                {
-                    addition = separators[i - 1].index + 1;
-                }
-
-                execvp(command[0 + addition], command);
-                fclose(fp);
-                // printf("NOT A VALID CMD\n");
-
-                _exit(1);
-            }
-            else if (strcmp(separators[i].symb, "|\0") == 0)
-            {
-                FILE *fp;
-                // FILE *fp1;
-
-                fp = freopen(*(command + separators[i].index + 1), "w", stdout);
-                printf("switched to taking input from file.and chils_pid is : %d \n", getpid());
-
-                int addition;
-                if (i == 0)
-                {
-                    addition = 0;
-                }
-                else
-                {
-                    addition = separators[i - 1].index + 1;
-                }
-
-                execvp(command[0 + addition], command);
-                fclose(fp);
-
-                // printf("NOT A VALID CMD\n");
-
-                _exit(1);
-            }
-
-            //exec vp
-
-            _exit(1);
+            *kira = NULL;
+            execvp(command[0], command);
+            printf("EXEC VP failed : UNKNOWN COMMAND\n");
+            _exit(0);
         }
         else
         {
+            pid_first = pid_k;
+            waitpid(pid_k, NULL, 0);
         }
     }
-
-    i = 0;
-    pid_t pid;
-
-    while (i < n - not_there)
+    else
     {
+        int i;
+        int prev_fd[2];
 
-        pid = waitpid(pid_arr[i], NULL, 0);
-        printf("this has waited for child with pid : %d \n", pid);
-        *(command + separators[i].index) = separators[i].symb;
-        i++;
+        // signal(SIGCHLD, SIG_BLOCK);
+        for (i = 1; i <= n + 1; i++)
+        {
+            int fd[2];
+            pipe(fd);
+            if ((pid_arr[i] = fork()) < 0)
+            {
+                printf("Fork failed.\n");
+                _exit(1);
+            }
+            else if (pid_arr[i] == 0)
+            {
+
+                int start;
+                int end;
+
+                if (i == 1)
+                {
+                    start = 0;
+                }
+                else
+                {
+                    start = separators[i - 2].index + 1;
+                }
+
+                if (i == n + 1)
+                {
+                    end = argCounter - 1;
+                }
+                else
+                {
+                    end = separators[i - 1].index - 1;
+                }
+
+                if (i != 1)
+                {
+                    close(prev_fd[1]);
+                    // printf("kuch na kuch\n");
+                    if (dup2(prev_fd[0], 0) == -1)
+                    {
+                        // printf("dup error\n");
+                        perror("eroor : ");
+                    }
+
+                    close(prev_fd[0]);
+                }
+                if (i != n + 1)
+                {
+                    close(fd[0]);
+                    // printf("bgggggg is %s\n", *(command + start));
+
+                    if (dup2(fd[1], 1) == -1)
+                    {
+                        perror("erooor : ");
+                    }
+
+                    close(fd[1]);
+                }
+                else
+                {
+                    // printf("bgggggg1 is %s\n", *(command + start));
+                }
+
+                // close(fd[0]);
+
+                all_redirect(start, end, command);
+                command += start;
+                char **kira = command;
+                // printf("this is it : %s", command[0]);
+                // printf("K%sK ", *kira);
+
+                while (*kira != NULL)
+                {
+                    if (!strcmp(*kira, ">\0") || !strcmp(*kira, "<\0"))
+                    {
+                        break;
+                    }
+                    // printf("K%sK ", *kira);
+                    kira++;
+                }
+                // printf("\n");
+
+                *kira = NULL;
+                execvp(command[0], command);
+                printf("EXEC VP failed : UNKNOWN COMMAND\n");
+
+                _exit(1);
+            }
+            else
+            {
+                if (i != 1)
+                {
+                    close(prev_fd[0]);
+                    close(prev_fd[1]);
+                }
+                else
+                {
+                    pid_first = pid_arr[1];
+                }
+
+                prev_fd[0] = fd[0];
+                prev_fd[1] = fd[1];
+            }
+        }
+
+        i = 0;
+        pid_t pid;
+        while (i < n)
+        {
+            pid = waitpid(pid_arr[i], NULL, 0);
+            // printf("this has waited for child with pid : %d \n", pid);
+            *(command + separators[i].index) = separators[i].symb;
+            i++;
+        }
     }
     /*Saving command to history*/
     (records + *(commands_executed))->filled = argCounter;
     (records + *(commands_executed))->command = command;
-    (records + *(commands_executed))->pid = getpid(); // this is wrong here..later need to design for each process
+    (records + *(commands_executed))->pid = pid_first; // this is wrong here..later need to design for each process
     (records + *(commands_executed))->is_back = *(bg_flag);
     *(commands_executed) += 1;
 
@@ -438,7 +535,7 @@ void exec_cmd(int argCounter, char **command)
 
     if (*flag_single || *flag_double)
     {
-        printf("[~][~] Message [~][~]\n[~][~] Always use <\"> for enclosing a string and <'> inside the string.\n[~][~] <\"> are not allowed inside a string and <\'> are not allowed for enclosing a string.\n");
+        printf("[~][~] Message [~][~]\n[~][~] Try to use <\"> for enclosing a string and <'> inside the string.\n[~][~] <\"> are not encouraged inside a string and <\'> are not allowed for enclosing a string.\n");
     }
 
     pid_t pid;
@@ -530,18 +627,23 @@ void exec_decider(int argCounter, char **command)
 {
     struct symbols separators[30];
     int separator_index = 0;
+    int redirection_index = 0;
     for (int i = 0; i < argCounter; i++)
     {
-        if (!strcmp(command[i], "<") || !strcmp(command[i], ">") || !strcmp(command[i], "|"))
+        if (!strcmp(command[i], "|\0"))
         {
             separators[separator_index].index = i;
             separators[separator_index].symb = command[i];
             separator_index += 1;
             command[i] = NULL;
         }
+        else if (!strcmp(command[i], "<\0") || !strcmp(command[i], ">\0"))
+        {
+            redirection_index += 1;
+        }
     }
 
-    if (separator_index > 0)
+    if (separator_index + redirection_index > 0)
     {
         //use exec_cmd_redirect
         exec_cmd_redirect(argCounter, command, separators, separator_index);
@@ -789,10 +891,10 @@ int tokenizer(char *private_line, char **command)
         *(bg_flag) = 0;
     }
 
-    for (int i = 0; i < counter; i++)
-    {
-        printf("These are tokens : %s\n", command[i]);
-    }
+    // for (int i = 0; i < counter; i++)
+    // {
+    //     printf("These are tokens : %s\n", command[i]);
+    // }
 
     return counter;
 }
@@ -872,7 +974,7 @@ int main(int argc, char *argv[])
 
     // printf("process within main : %d", getpid());
 
-    printf("[~][~] Message [~][~]\n[~][~] Always use <\"> for enclosing a string and <'> inside the string.\n[~][~] <\"> are not allowed inside a string and <\'> are not allowed for enclosing a string.\n");
+    printf("[~][~] Message [~][~]\n[~][~] Try to use <\"> for enclosing a string and <'> inside the string.\n[~][~] <\"> are not encouraged inside a string and <\'> are not allowed for enclosing a string.\n");
 
     records = (struct trex *)malloc(sizeof(struct trex) * MAX_LEN);
     head = NULL;
@@ -988,6 +1090,11 @@ int main(int argc, char *argv[])
 
         if (strcmp(command[0], "help") == 0)
         {
+            if (counter != 1)
+            {
+                printf("For help the correct cmd is --\"help\"\n");
+                continue;
+            }
             printf("\nBelow is the list of additionally available user commands :\n");
             printf("%-35s", "1) HISTn ");
             printf(": Will print the last `n` commands.\n");
@@ -1117,22 +1224,37 @@ int main(int argc, char *argv[])
         }
         else if (!strcmp("STOP\0", command[0]))
         {
-            if (*(bg_flag) == 1)
+            if (counter == 1)
             {
-                printf("[!][!][!] Cannot run `STOP` command in background, running it in foreground.\n");
+                if (*(bg_flag) == 1)
+                {
+                    printf("[!][!][!] Cannot run `STOP` command in background, running it in foreground.\n");
+                }
+                struct Node *kill_head = head;
+                while (head != NULL)
+                {
+                    kill(kill_head->pid, SIGKILL);
+                    head = kill_head->next;
+                    free(kill_head);
+                    kill_head = head;
+                }
+                break;
             }
-            struct Node *kill_head = head;
-            while (head != NULL)
+            else
             {
-                kill(kill_head->pid, SIGKILL);
-                head = kill_head->next;
-                free(kill_head);
-                kill_head = head;
+                printf("The correct command to stop is : \"STOP\".\n");
             }
-            break;
         }
+
         else if (!(strcmp("HISTORY\0", command[0])))
         {
+
+            if (counter == 1)
+            {
+                printf("[!][!][!] Please choose a correct command.\nThe correct commands with HISTORY are :\n 1) HISTORY BRIEF -- For short description of command history.\n 2) HISTORY FULL  -- For full description of command history.\n");
+                // printf("command executed -- %d", *(commands_executed));
+                continue;
+            }
             if (*(bg_flag) == 1)
             {
                 printf("[!][!][!] Cannot run command in background, running it in foreground.\n");
@@ -1183,6 +1305,13 @@ int main(int argc, char *argv[])
         }
         else if (!(strcmp("EXEC\0", command[0])))
         {
+            if (counter == 1)
+            {
+                printf("[!][!][!] Please choose a correct command.\nThe correct commands with EXEC are :\n 1) EXEC <COMMAND_NAME>         -- For executing a terminal command.\n 2) EXEC <COMMAND_INDEX_NUMBER> -- For executing a command by its index in cmd_history.\n");
+                // printf("command executed -- %d", *(commands_executed));
+                continue;
+            }
+
             int command_no = atoi(command[1]);
 
             if (command_no)

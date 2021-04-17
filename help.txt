@@ -1,6 +1,0 @@
-line : he she
-
-line : diff yum
-
-line : puk d
-t_pid is : 26324 
